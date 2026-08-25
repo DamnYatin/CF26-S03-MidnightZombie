@@ -1,209 +1,269 @@
 # 🏙️ Urban Infrastructure Cascade Simulator
-### Smart Cities & Urban Infrastructure — Track S-03
+### 🚀 Smart Cities & Urban Infrastructure — Track S-03
 
-> **An interactive, dynamic graph-based simulation engine and mission-control command center dashboard for modeling how disruptions propagate through interdependent municipal services over discrete time steps.**
+<div align="center">
+
+[![Python 3.11](https://img.shields.io/badge/Python-3.11-3776AB?style=for-the-badge&logo=python&logoColor=white)](https://www.python.org/)
+[![FastAPI](https://img.shields.io/badge/FastAPI-0.111-009688?style=for-the-badge&logo=fastapi&logoColor=white)](https://fastapi.tiangolo.com/)
+[![React 18](https://img.shields.io/badge/React-18.3-61DAFB?style=for-the-badge&logo=react&logoColor=black)](https://reactjs.org/)
+[![TypeScript](https://img.shields.io/badge/TypeScript-5.6-3178C6?style=for-the-badge&logo=typescript&logoColor=white)](https://www.typescriptlang.org/)
+[![Vite](https://img.shields.io/badge/Vite-5.4-646CFF?style=for-the-badge&logo=vite&logoColor=white)](https://vitejs.dev/)
+[![Tailwind CSS](https://img.shields.io/badge/Tailwind-3.4-38B2AC?style=for-the-badge&logo=tailwind-css&logoColor=white)](https://tailwindcss.com/)
+[![Pytest](https://img.shields.io/badge/Pytest-5%20PASSED-brightgreen?style=for-the-badge&logo=pytest&logoColor=white)](https://pytest.org/)
+[![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg?style=for-the-badge)](LICENSE)
+
+<br />
+
+**A dynamic directed-graph simulation engine and tactical mission-control HUD for modeling how disruptions cascade through interdependent municipal utilities over discrete time steps.**
+
+[Explore Live Demo](#-quickstart-guide) • [Architecture](#-system-architecture) • [Mathematical Model](#-mathematical-formulation) • [Pytest Suite](#-automated-testing--validation) • [Team](#-team-members--contributions)
+
+<br />
+
+```
+  ========================================================================================
+   POWER FAILURE  ──►  WATER PUMPS  ──►  DATA CENTERS  ──►  UPI SWITCH  ──►  911 DISPATCH
+  ========================================================================================
+```
+
+</div>
 
 ---
 
-## 📌 1. Problem Statement & Solution Overview
-
-### Problem Statement (Track S-03)
-Urban services are deeply interconnected. A localized disruption in a single physical or digital service (such as a power transformer blowout or a severed optical fiber link) does not remain isolated. Instead, it cascades unpredictably into dependent utilities—water pumps lose pressure, cloud data centers overheat, rail signaling halts, UPI payment gateways drop transactions, and emergency 911 dispatch networks fail.
-
-Traditional emergency planning tools operate in isolated organizational silos, making it virtually impossible to detect second- and third-order systemic collapse before disaster strikes.
-
-```
-                   [TRADITIONAL SILOED MODEL]
-         [Power Grid]    [Water Grid]    [Transit]    [Fintech]
-             (No cross-sector visibility or cascade tracking)
-
-                                vs.
-
-            [OUR INTERDEPENDENT DYNAMIC GRAPH MODEL]
-                      ┌───► Water Pumps
-                      │
-   Power Substation ──┼───► Data Center ──► UPI Payments Switch
-                      │
-                      └───► Train Signals ──► Subway Lines & 911 Dispatch
-```
-
-### Known Constraints Addressed
-- ✅ **Dynamic Graph Modeling**: Directed graph representing 16 services across 6 municipal sectors.
-- ✅ **Time-Dependent Discrete States**: Step-by-step tick simulation loop ($t = 0 \dots T$).
-- ✅ **Failure & Recovery Actions**: Stochastic forward propagation + sector-specific countdown recovery.
-- ✅ **Multi-Node Simultaneous Disruptions**: Coordinated multi-point crisis injection.
-- ✅ **Quantitative Resiliency Metrics**: Cascade Depth, Blast Radius, Recovery Ticks, and Resilience Score ($0 - 100$).
-- ✅ **Deterministic Reproducibility**: Isolated RNG seeds (`random.Random(seed)`) generating byte-identical runs.
+## 📑 Table of Contents
+- [Executive Summary](#-executive-summary)
+- [Problem Statement & Constraints](#-problem-statement--constraints)
+- [System Architecture](#-system-architecture)
+- [Core Mathematical Mechanism](#-core-mathematical-mechanism)
+- [Technology Stack](#-technology-stack)
+- [Quickstart Guide](#-quickstart-guide)
+- [Usage Modes](#-usage-modes)
+- [Automated Testing & Validation](#-automated-testing--validation)
+- [Experimental Results](#-experimental-results)
+- [Limitations & Future Roadmap](#-limitations--future-roadmap)
+- [Team Members & Roles](#-team-members--contributions)
 
 ---
 
-## 🏛️ 2. System Architecture & Workflow
+## 💡 Executive Summary
 
-The system is built as a decoupled, zero-database architecture with dual execution interfaces (a **React Vite Command Center HUD** and an **Air-Gapped Headless CLI**):
+Modern urban centers are marvels of interconnected engineering. However, hyper-connectivity introduces dangerous hidden fragilities: **interdependent cascading failure**.
+
+When an electrical substation trips, the consequences are rarely confined to a simple blackout:
+* **Water Treatment Plants** lose pump pressure within minutes.
+* **Cloud Data Centers** overheat as chiller towers lose water.
+* **Metro Rail Systems** halt due to automated signaling interlocking failure.
+* **National UPI & Payment Switches** drop transactions as servers desynchronize.
+* **Emergency 911 Dispatch Hubs** lose caller routing and traffic camera synchronization.
+
+The **Urban Infrastructure Cascade Simulator** provides disaster response coordinators, municipal planners, and critical infrastructure engineers with a **real-time digital twin** to model, visualize, and stress-test these cascading vulnerabilities before crisis strikes.
+
+---
+
+## 🎯 Problem Statement & Constraints
+
+> **Track S-03: Smart Cities & Urban Infrastructure**
+> 
+> *"Urban services are interconnected. A failure in one digital or operational service can propagate into other services, creating cascading failures that are difficult to detect using isolated monitoring systems. Develop an Urban Infrastructure Cascade Simulator that represents interdependent urban services as a dynamic graph and simulates how disruptions propagate through the system."*
+
+### 📋 Constraints & Capabilities Matrix
+
+| Constraint / Requirement | Implementation in Our System | Status |
+| :--- | :--- | :---: |
+| **Dynamic Graph Representation** | 16 nodes across 6 sectors in a directed $\text{NetworkX}$ `DiGraph` with weighted propagation edges | `SUPPORTED` |
+| **Time-Dependent Discrete States** | Discrete tick loop ($t = 0 \dots T$) yielding immutable state snapshots $S(t)$ | `SUPPORTED` |
+| **Failure & Recovery Actions** | Stochastic Bernoulli rolls for cascade propagation + sector-specific countdown recovery timers | `SUPPORTED` |
+| **Multi-Node Simultaneous Disruptions** | Multi-point root disruptions at Tick 0 and custom chaos injection | `SUPPORTED` |
+| **Quantitative Resilience Metrics** | Real-time calculation of Cascade Depth, Blast Radius, Recovery Ticks, and Resilience Score | `SUPPORTED` |
+| **Deterministic Reproducibility** | Isolated PRNG instances (`random.Random(seed)`) guaranteeing byte-identical event logs | `SUPPORTED` |
+
+---
+
+## 🏛️ System Architecture
+
+The project features a decoupled, zero-database architecture designed for sub-millisecond local execution and air-gapped deployment:
 
 ```
 ┌────────────────────────────────────────────────────────────────────────────────────────┐
-│                                SYSTEM ARCHITECTURE WORKFLOW                            │
+│                              END-TO-END SYSTEM WORKFLOW                                │
 └────────────────────────────────────────────────────────────────────────────────────────┘
 
- [USER INPUT / OPERATOR]
+ [OPERATOR CONTROLS]
    │
-   ├── Web HUD: Scenario Picker / RNG Seed / Custom Chaos
-   └── CLI Menu: python run_demo.py / python backend/main.py
+   ├── Scenario Picker Matrix (4 Presets: Power, Transit, Telecom, Water)
+   ├── Isolated RNG Seed Input (e.g., Seed 42) + Max Ticks Slider
+   └── Custom Multi-Node Chaos Injector
          │
          ▼
  ┌───────────────────────────────────────────────────────────────────────────────────────┐
  │ FASTAPI BACKEND SERVER (Port 8000)                                                    │
  │                                                                                       │
- │   [REST Endpoints]                       [WebSocket Channel]                          │
- │   GET /graph | GET /scenarios            WS /ws/{run_id} (Streaming ~350ms/tick)      │
- │                                                   │                                   │
- │   ┌───────────────────────────────────────────────┴───────────────────────────────┐   │
+ │   [REST Endpoints]                       [WebSocket Real-Time Stream]                 │
+ │   GET  /graph                            WS  /ws/{run_id}                             │
+ │   GET  /scenarios                        Pushes JSON frame every ~350ms               │
+ │   POST /simulate                                 │                                    │
+ │                                                  ▼                                    │
+ │   ┌───────────────────────────────────────────────────────────────────────────────┐   │
  │   │ DISCRETE SIMULATION ENGINE (cascade_engine.py)                                │   │
- │   │   1. Apply Root Disruptions (Tick 0)                                          │   │
- │   │   2. Stochastic Propagation (NetworkX DiGraph Edge Probabilities)             │   │
- │   │   3. Decrement Sector Recovery Countdowns (config.py)                         │   │
- │   │   4. Yield Immutable State Snapshot S(t)                                      │   │
- │   └───────────────────────────────────────────────┬───────────────────────────────┘   │
- │                                                   │                                   │
- │   ┌───────────────────────────────────────────────┴───────────────────────────────┐   │
+ │   │   Phase 1: Apply Root Disruptions at t = 0                                    │   │
+ │   │   Phase 2: Apply Scheduled Cascades from t-1                                  │   │
+ │   │   Phase 3: Decrement Sector Recovery Counters & Restore Healthy Nodes         │   │
+ │   │   Phase 4: Roll Stochastic Edge Probabilities: P(u -> v)                      │   │
+ │   │   Phase 5: Emit Deep Immutable Snapshot S(t)                                  │   │
+ │   └──────────────────────────────────────────────┬────────────────────────────────┘   │
+ │                                                  │                                    │
+ │   ┌──────────────────────────────────────────────┴────────────────────────────────┐   │
  │   │ RESILIENCE ANALYTICS ENGINE (metrics.py)                                      │   │
  │   │   - Causal Tree Lineage Backtracking (source_service_id)                      │   │
- │   │   - Cascade Depth, Recovery Duration, System Resilience Score (0-100)          │   │
+ │   │   - Maximum Cascade Depth, System Recovery Ticks, Resilience Score (0-100)     │   │
  │   └───────────────────────────────────────────────────────────────────────────────┘   │
  └───────────────────────────────────────────────────────────────────────────────────────┘
          │
-         ▼ (Real-time JSON Frames over WebSocket)
+         ▼ (Low-Latency WebSocket Streaming)
  ┌───────────────────────────────────────────────────────────────────────────────────────┐
- │ REACT 18 + TYPESCRIPT MISSION CONTROL HUD (Port 5173)                                 │
+ │ REACT 18 + TAILWIND MISSION CONTROL HUD (Port 5173)                                   │
  │                                                                                       │
- │   [SVG Topology Canvas]           [Telemetry KPI Cards]       [Timeline Replay Bar]   │
- │   - Glowing shockwave rings       - Cascade Depth (3)         - Time travel scrubber  │
- │   - Countdown badge overlays      - Blast Radius (16/16)      - Speed: 0.5x - 4x      │
- │   - Upstream/Downstream drawer    - Resilience Score (19.6)   - Causal event feed     │
+ │   ┌─────────────────────────┐  ┌─────────────────────────┐  ┌─────────────────────┐   │
+ │   │   SVG Graph Canvas      │  │    Telemetry Cards      │  │  Timeline Scrubber  │   │
+ │   │ • Glowing shockwaves    │  │ • Cascade Depth: 3      │  │ • Frame time-travel │   │
+ │   │ • Sector color coding   │  │ • Blast Radius: 16/16   │  │ • Speeds: 0.5x - 4x │   │
+ │   │ • Recovery badges (2t)  │  │ • Resilience: 19.6/100  │  │ • Causal event logs │   │
+ │   └─────────────────────────┘  └─────────────────────────┘  └─────────────────────┘   │
  └───────────────────────────────────────────────────────────────────────────────────────┘
 ```
 
 ---
 
-## ⚙️ 3. Core Technical Mechanism
+## 🔬 Core Mathematical Mechanism
 
-### A. Graph Topology & Directed Dependencies
-We model the city as a directed graph $\mathcal{G} = (\mathcal{V}, \mathcal{E})$ with **16 nodes across 6 sectors**:
-1. **Power Grid**: `POWER_MAIN_PLANT`, `POWER_SUB_NORTH`, `POWER_SUB_SOUTH`
-2. **Water & Sanitation**: `WATER_TREATMENT_MAIN`, `WATER_PUMP_NORTH`, `WATER_DISTRIB_METRO`
-3. **Telecom & Data**: `DATA_CENTER_METRO`, `FIBER_BACKBONE`, `CELL_TOWER_NORTH`
-4. **Transit & Mobility**: `TRAIN_SIGNAL_CENTRAL`, `METRO_SUBWAY_SYS`, `TRAFFIC_LIGHT_GRID`
-5. **Financial (UPI)**: `UPI_SWITCH_CENTRAL`, `BANKING_GATEWAY_METRO`
-6. **Healthcare & EMS**: `REGIONAL_HOSPITAL_ICU`, `EMERGENCY_DISPATCH_911`
+### 1. The Directed Dependency Graph ($\mathcal{G}$)
+We model the city as $\mathcal{G} = (\mathcal{V}, \mathcal{E})$, where:
+* $\mathcal{V}$ contains **16 urban services across 6 sectors** (Power, Water, Telecom, Transit, UPI, Healthcare).
+* $\mathcal{E}$ contains **directed dependency links** $(u \rightarrow v)$, meaning *service $v$ depends on service $u$*.
+* Each edge carries a calibrated failure probability $P(u \rightarrow v) \in [0.0, 1.0]$.
 
-Directed edge $(u \rightarrow v)$ with weight $P(u \rightarrow v) \in [0.0, 1.0]$ means **$v$ depends on $u$**. If $u$ fails, $v$ rolls against $P(u \rightarrow v)$ to determine if it collapses on the next tick.
+```
+                                  [POWER_MAIN_PLANT]
+                                     (Root Power)
+                                    /            \
+                       P = 0.90    /              \   P = 0.90
+                                  ▼                ▼
+                          [POWER_SUB_NORTH]   [POWER_SUB_SOUTH]
+                             /        \             /        \
+                   P = 0.80 /   P=0.75 \   P = 0.75/   P=0.70 \
+                           ▼            ▼         ▼            ▼
+                   [WATER_TREAT]  [DATA_CENTER] [PUMP_NORTH] [HOSPITAL_ICU]
+```
 
----
+### 2. Discrete-Time Propagation Loop ($t = 0 \dots T$)
+For every node $u$ that fails on tick $t-1$:
+$$\forall v \in \text{Out}(u) \quad \text{such that } \text{Status}(v) = \text{UP}:$$
+$$\text{Roll } R \sim \text{Uniform}(0, 1) \quad \Longrightarrow \quad \text{If } R < P(u \rightarrow v), \quad v \text{ fails at tick } t \text{ with parent } u$$
 
-### B. Discrete Tick Simulation Loop ($t = 0 \dots T$)
-At each discrete time step $t$:
-1. **Phase 1 (Manual / Scheduled Disruptions)**: Root disruptions are applied ($S_u \leftarrow \text{FAILED}$).
-2. **Phase 2 (Cascade Execution)**: Nodes scheduled from $t-1$ fail, recording their causal parent:
-   $$\text{source\_service\_id}(v) \leftarrow u$$
-3. **Phase 3 (Recovery Lifecycle)**: Active failures decrement their remaining repair timers:
-   $$\text{remaining}_v(t) = \max(0, \text{remaining}_v(t-1) - 1)$$
-   When $\text{remaining}_v(t) = 0$, status flips to $\text{RECOVERED}$.
-4. **Phase 4 (Stochastic Rolls)**: For every newly failed node $u$, iterate over operational downstream neighbors $v \in \text{Out}(u)$. Roll pseudo-random $R \sim \text{Uniform}(0, 1)$ via `rng.random()`. If $R < P(u \rightarrow v)$, queue $v$ to fail at $t+1$.
-5. **Phase 5 (Immutable Snapshot)**: Deep-copy all nodes and edges into an immutable `SimulationState` model and yield to the WebSocket channel.
+### 3. Sector Recovery Durations
+Each sector has realistic operational repair latencies configured in `backend/config.py`:
 
----
+$$\text{Recovery Ticks} = \begin{cases} 
+2 \text{ ticks} & \text{Telecom \& UPI Payments (cloud failover)} \\
+3 \text{ ticks} & \text{Water \& Transit (line pressure \& track safety clearance)} \\
+4 \text{ ticks} & \text{Power \& Healthcare (thermal boiler cold-start \& ICU triage)}
+\end{cases}$$
 
-### C. Domain-Specific Recovery Latencies
-Repair times mirror realistic operational recovery constraints:
-* **Telecom & Payments (2 Ticks)**: Fast automated cloud replica failover and packet rerouting.
-* **Water & Transit (3 Ticks)**: Line repressurization, filter backwash cycles, and rail track clearance.
-* **Power & Healthcare (4 Ticks)**: Thermal plant cold-start procedures, transformer rebuilds, and ICU life-support stabilization.
+### 4. Metrics Formulation
 
----
-
-### D. Mathematical Metrics Formulation
-
-#### 1. Cascade Depth (Causal Tree Height)
-Computed by recursively backtracking parent pointers ($\text{source\_service\_id}$) to find the longest causal path:
+#### A. Cascade Depth (Causal Tree Height)
+Using recursive parent-pointer traversal across `source_service_id`:
 $$\text{Cascade Depth} = \max_{v \in \mathcal{V}_{\text{failed}}} \text{Depth}(v)$$
 
-#### 2. Composite Resilience Score ($0.0 - 100.0$)
-$$\text{Resilience Score} = 100 - \left( 0.50 \cdot \frac{|\mathcal{V}_{\text{affected}}|}{|\mathcal{V}_{\text{total}}|} + 0.25 \cdot \frac{\text{Depth}}{D_{\text{max}}} + 0.25 \cdot \frac{\text{Recovery Time}}{T_{\text{max}}} \right) \times 100$$
-* **$100.0$**: Perfectly immune network (no dominoes).
-* **$< 25.0$**: Critical systemic collapse across multiple sectors.
+#### B. Composite Resilience Score ($0.0 - 100.0$)
+$$\text{Score} = 100 - \left( 0.50 \cdot \frac{|\mathcal{V}_{\text{affected}}|}{|\mathcal{V}_{\text{total}}|} + 0.25 \cdot \frac{\text{Depth}}{4} + 0.25 \cdot \frac{\text{Recovery Time}}{15} \right) \times 100$$
 
 ---
 
-## 🛠️ 4. Technology Stack
+## 💻 Technology Stack
 
-| Layer | Technology | Purpose |
-| :--- | :--- | :--- |
-| **Backend Language** | **Python 3.11** | Core simulation engine and mathematical graph calculations |
-| **Web Server** | **FastAPI + Uvicorn** | High-performance REST API and real-time WebSocket streaming |
-| **Graph Modeling** | **NetworkX** | Directed graph construction, edge weight traversal, and adjacency lookup |
-| **Data Validation** | **Pydantic v2** | Strict schema validation and auto-serialization to JSON models |
-| **Testing Suite** | **Pytest** | Automated unit tests proving determinism and mathematical integrity |
-| **Frontend Framework**| **React 18 + TypeScript**| Component-based single-page application with strict type safety |
-| **UI Styling** | **Tailwind CSS** | Custom Google Stitch Kinetic Grid HUD design system |
+```
+   BACKEND INFRASTRUCTURE                 FRONTEND MISSION CONTROL
+┌──────────────────────────────┐       ┌──────────────────────────────┐
+│ • Python 3.11                │       │ • React 18 (Hooks & Context) │
+│ • FastAPI (REST + WS)        │       │ • TypeScript 5.6             │
+│ • NetworkX 3.3 (Graph Math)  │  ◄──► │ • Vite 5.4                   │
+│ • Pydantic v2 (Validation)   │       │ • Tailwind CSS 3.4           │
+│ • Pytest 8.2 (Testing)       │       │ • Recharts (Telemetry Curves)│
+│ • Matplotlib (Offline CLI)   │       │ • Lucide React (HUD Icons)   │
+└──────────────────────────────┘       └──────────────────────────────┘
+```
 
 ---
 
-## 💻 5. Setup & Installation Instructions
+## 🚀 Quickstart Guide
 
 ### Prerequisites
-* **Python 3.10+** (Tested on Python 3.11)
+* **Python 3.10+** (Python 3.11 recommended)
 * **Node.js 18+** & **npm**
 
 ---
 
-### ⚡ Option A: One-Click Launchers (Easiest)
+### ⚡ Option 1: One-Click Startup
 
-- **Windows (Double-click)**: Run [`start.bat`](start.bat)  
-  *(Automatically checks environments, installs dependencies, launches backend & frontend in separate terminals, and opens `http://localhost:5173`).*
-- **macOS / Linux**: Run [`./start.sh`](start.sh) in your terminal.
-- **Interactive Terminal Menu**: Run `python run_demo.py`.
+<details open>
+<summary><b>Windows (One-Click)</b></summary>
+
+Simply double-click [`start.bat`](start.bat) or run from CMD:
+```bat
+start.bat
+```
+*Automatically installs dependencies, launches the backend on port 8000, launches Vite on port 5173, and opens your browser.*
+</details>
+
+<details>
+<summary><b>Linux / macOS (One-Click)</b></summary>
+
+```bash
+chmod +x start.sh
+./start.sh
+```
+</details>
 
 ---
 
-### 🛠️ Option B: Manual Step-by-Step Launch
+### 🛠️ Option 2: Manual Terminal Launch
 
-#### 1. Backend Server
+#### Step 1: Start Backend API & WebSocket Server
 ```bash
-# From project root:
 cd urban-cascade-simulator
 pip install -r backend/requirements.txt
 uvicorn backend.api:app --reload --port 8000
 ```
 * API Health Probe: `http://localhost:8000/health`
-* Interactive OpenAPI Docs: `http://localhost:8000/docs`
+* Interactive Swagger Docs: `http://localhost:8000/docs`
 * WebSocket Stream: `ws://localhost:8000/ws/{run_id}`
 
-#### 2. Frontend Dashboard
+#### Step 2: Start React Frontend HUD
 ```bash
-# In a second terminal:
 cd urban-cascade-simulator/frontend
 npm install
 npm run dev
 ```
-* Open `http://localhost:5173` in your browser.
+* Open **`http://localhost:5173`** to access the Command Center.
 
 ---
 
-## 🕹️ 6. Usage Instructions
+## 🕹️ Usage Modes
 
-### A. Web Command Center HUD (`http://localhost:5173`)
-1. **Select Crisis Scenario**: Click any scenario card (e.g., **"Central Grid Blackout"**).
-2. **Configure Parameters**: Set `RNG SEED` (default: `42`) and `MAX TICKS` (default: `18`).
-3. **Stream Live**: Click **"STREAM LIVE"** to watch the real-time WebSocket cascade unfold.
-4. **Inspect Causal Lineage**: Click on any disrupted node (e.g., `EMERGENCY_DISPATCH_911`) to open the telemetry drawer and view upstream triggers.
-5. **Timeline Scrubbing**: Drag the scrub bar to rewind time to $T_0, T_1, T_2$ or hit **Replay (2x)**.
-6. **Custom Chaos**: Toggle **"Custom Mode"** to select arbitrary simultaneous multi-node failures.
+### Mode 1: Mission Control Web HUD (`http://localhost:5173`)
+1. **Choose a Scenario**: Select **Central Grid Blackout**, **Dual Sector Mobility Collapse**, **Fiber Sever**, or **Water Contamination**.
+2. **Set Parameters**: Adjust the **RNG Seed** (e.g. `42`) or click **Reroll**.
+3. **Stream Live**: Click **`STREAM LIVE`** to watch the real-time cascading shockwave.
+4. **Time Travel Scrubbing**: Drag the scrub bar to rewind time to $T_0 \dots T_N$ and replay at $0.5\times - 4\times$ speed.
+5. **Inspect Causal Lineage**: Click any node on the graph to open the telemetry drawer and view upstream triggers.
 
 ---
 
-### B. Interactive Terminal Menu (`run_demo.py`)
-Run `python run_demo.py` in your terminal for an interactive numbered menu:
+### Mode 2: Interactive Terminal Quick Demo (`run_demo.py`)
+```bash
+python run_demo.py
+```
 ```text
 ============================================================================
   [CITY] URBAN INFRASTRUCTURE CASCADE SIMULATOR -- QUICK DEMO RUNNER
@@ -219,13 +279,13 @@ Run `python run_demo.py` in your terminal for an interactive numbered menu:
 
 ---
 
-### C. Headless CLI Runner (`main.py`)
-Run simulations completely offline without a browser:
+### Mode 3: Headless CLI Runner (`main.py`)
+Run simulations in air-gapped environments without a browser:
 ```bash
-# Run Central Grid Blackout with Seed 42 for 15 ticks
+# Run simulation and print ASCII event log
 python backend/main.py --scenario power_grid_collapse --seed 42 --ticks 15
 
-# Export a static Matplotlib plot to cascade_run_42.png
+# Export static graph plot to cascade_run_42.png
 python backend/main.py --scenario power_grid_collapse --seed 42 --visualize
 
 # List all scenario presets
@@ -234,10 +294,10 @@ python backend/main.py --list-scenarios
 
 ---
 
-## 🧪 7. Validation, Experiments & Results
+## 🧪 Automated Testing & Validation
 
-### A. Automated Pytest Verification Suite
-Run the test suite with:
+All stochastic simulation decisions are isolated inside dedicated `random.Random(seed)` instances. The test suite proves deterministic reproducibility and mathematical validity:
+
 ```bash
 python -m pytest backend/tests/test_reproducibility.py -v
 ```
@@ -256,47 +316,64 @@ backend/tests/test_reproducibility.py::test_recovery_countdown_lifecycle    PASS
 ============================== 5 passed in 0.56s ==============================
 ```
 
+| Test Case | Verification Target |
+| :--- | :--- |
+| `test_byte_identical_reproducibility` | Two runs with `seed=42` produce 100% byte-identical event logs and metrics |
+| `test_seed_divergence` | Different seeds (`42` vs `9999`) produce distinct stochastic cascade branches |
+| `test_multi_node_initial_failures` | Verifies multi-point simultaneous root failures at Tick 0 |
+| `test_causal_lineage_and_depth` | Verifies every cascading node has a valid parent link and computes correct tree depth |
+| `test_recovery_countdown_lifecycle` | Verifies the complete state machine: $\text{UP} \rightarrow \text{FAILED} \rightarrow \text{RECOVERING} \rightarrow \text{RECOVERED}$ |
+
 ---
 
-### B. Experimental Results Across Scenarios
+## 📊 Experimental Results
 
-| Scenario | Seed | Root Disruption | Cascade Depth | Affected Nodes | Recovery Time | Resilience Score | Outcome |
-| :--- | :--- | :--- | :--- | :--- | :--- | :--- | :--- |
+Experimental metrics across built-in scenarios and control runs:
+
+| Scenario / Experiment | Seed | Root Disruption | Cascade Depth | Affected Nodes | Recovery Time | Resilience Score | System Outcome |
+| :--- | :---: | :--- | :---: | :---: | :---: | :---: | :--- |
 | **Central Grid Blackout** | `42` | `POWER_MAIN_PLANT` | **3** | **16 / 16 (100%)** | **7 ticks** | **19.6 / 100** | Full systemic collapse |
-| **Dual Mobility Collapse** | `42` | `POWER_SUB_SOUTH`, `TRAIN_SIGNAL` | **3** | **10 / 16 (62%)** | **6 ticks** | **40.0 / 100** | Water & Transit hit |
-| **Aqueduct Contamination**| `42` | `WATER_TREATMENT_MAIN` | **3** | **7 / 16 (44%)** | **7 ticks** | **47.7 / 100** | Water & Healthcare hit |
-| **Solo Leaf Disruption** | `42` | `BANKING_GATEWAY_METRO`| **0** | **1 / 16 (6%)** | **2 ticks** | **93.5 / 100** | Completely isolated |
-| **Solo Healthcare Node** | `42` | `EMERGENCY_DISPATCH_911`| **1** | **2 / 16 (12%)** | **5 ticks** | **79.2 / 100** | Localized to hospital |
+| **Dual Mobility Collapse** | `42` | `POWER_SUB_SOUTH`, `TRAIN_SIGNAL` | **3** | **10 / 16 (62%)** | **6 ticks** | **40.0 / 100** | Transit, Water & 911 disrupted |
+| **Aqueduct Contamination**| `42` | `WATER_TREATMENT_MAIN` | **3** | **7 / 16 (44%)** | **7 ticks** | **47.7 / 100** | Water, Payments & ICU disrupted |
+| **Solo Leaf Node** | `42` | `BANKING_GATEWAY_METRO`| **0** | **1 / 16 (6%)** | **2 ticks** | **93.5 / 100** | Completely isolated failure |
+| **Solo Healthcare Node** | `42` | `EMERGENCY_DISPATCH_911`| **1** | **2 / 16 (12%)** | **5 ticks** | **79.2 / 100** | Localized to hospital cluster |
 
 ---
 
-## 🔮 8. Limitations & Future Scope
+## 🔮 Limitations & Future Roadmap
 
-### Current Limitations
-1. **Synthetic Calibrated Probabilities**: Edge weights ($P(u \rightarrow v)$) are currently calibrated domain heuristics rather than live physical sensor feeds.
-2. **Homogeneous Ticks**: All simulation ticks are uniform discrete steps rather than real-time continuous differential equations.
-3. **In-Memory Volatility**: Simulation snapshots exist in memory; no persistent SQL database is used (by design for zero-latency hackathon execution).
+### Current Scope & Limitations
+- **Calibrated Probabilities**: Edge failure probabilities $P(u \rightarrow v)$ are currently calibrated domain heuristics rather than live hardware telemetry feeds.
+- **Discrete Uniform Time**: Ticks represent discrete operational phases rather than real-time continuous differential equations.
+- **In-Memory Snapshots**: Designed for zero-latency in-memory execution without persistent SQL overhead.
 
-### Future Scope & Roadmap
-1. **Live SCADA / IoT Telemetry Ingestion**: Ingest real-time power grid Phasor Measurement Units (PMUs) and water pressure sensors to dynamic-tune edge weights.
-2. **AI-Driven Preventive Dispatch**: Integrate Reinforcement Learning agents to automatically recommend optimal generator dispatch and emergency valve shutoffs to halt cascades.
-3. **Multi-City Geographical GIS Mapping**: Expand from normalized 2D SVG canvas to real Mapbox/Deck.gl GIS spatial coordinate overlays.
-4. **WebGL / Canvas Scalability**: Transition from SVG to PixiJS / Three.js to scale from 16 nodes to 50,000+ urban telemetry assets.
+### Future Roadmap
+- 📡 **Live SCADA & IoT Sensor Ingestion**: Real-time integration with power grid Phasor Measurement Units (PMUs) and municipal hydraulic pressure transducers.
+- 🤖 **Reinforcement Learning Preventive Dispatch**: An AI agent that recommends optimal generator reallocation and emergency valve closures in real time to halt cascades.
+- 🗺️ **Geographical GIS Overlays**: Integration with Mapbox and Deck.gl for spatial 3D city mapping.
+- ⚡ **Large-Scale WebGL Acceleration**: Migration from SVG to PixiJS/Three.js to support 50,000+ urban telemetry assets at 60 FPS.
 
 ---
 
 ## 👥 Team Members & Contributions
 
-| Name | Role | Responsibilities |
+<div align="center">
+
+| Member | Role | Key Contributions |
 | :--- | :--- | :--- |
-| **Arya Rathore** | **Team Leader** | Project Leadership, Architecture Planning & Presentation PPT |
-| **Suhani Nankani** | **Frontend & Pitch Lead** | Pitch Delivery, UI/UX Implementation & Frontend Integration |
-| **Atharv Dubey** | **Backend & Technical Writer** | Backend Engine, Technical Explanation & Presentation PPT |
-| **Yatin Mishra** | **Tech Lead & Demo Specialist** | Core Technical Implementation, Testing Suite & Live Demonstration |
+| **Arya Rathore** | **Team Leader** | Project Leadership, Architectural Planning, Slide Deck & Presentation |
+| **Suhani Nankani** | **Frontend & Pitch Lead** | UI/UX Design System (Stitch HUD), Pitch Delivery & Component Integration |
+| **Atharv Dubey** | **Backend & Technical Writer** | Discrete Tick Simulation Engine, Documentation & Presentation PPT |
+| **Yatin Mishra** | **Tech Lead & Demo Specialist** | NetworkX Graph Engine, Pytest Automated Suite & Live Demonstration |
+
+</div>
 
 ---
 
 <div align="center">
-  <b>Urban Infrastructure Cascade Simulator — Smart Cities Hackathon</b><br>
-  <i>Built with FastAPI, NetworkX, Pydantic, React, Vite, and Tailwind CSS</i>
+
+**⭐ If you find this simulator useful for disaster management or smart city research, consider starring the repository!**
+
+Made with ❤️ by the **Track S-03 Hackathon Team**
+
 </div>
